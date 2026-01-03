@@ -4,4 +4,4 @@ title = "Inicio"
 
 # Writeups TryHackMe
 
-👉 [Ver todas las máquinas](/posts/)
+- [Ver todas las máquinas](content/posts/)
