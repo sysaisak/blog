@@ -8,3 +8,7 @@ theme = "simple"
 
   [params.author]
     name = "sysbl1nk"
+
+[caches]
+  [caches.images]
+    dir = ':cacheDir/images'
