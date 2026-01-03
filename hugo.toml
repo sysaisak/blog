@@ -1,0 +1,10 @@
+"baseURL = "https://sysbl1nk.github.io/"
+languageCode = "es"
+title = "Pwnd blog"
+theme = "simple"
+
+[params]
+  description = "Blog hecho con Org mode y Hugo"
+
+  [params.author]
+    name = "sysbl1nk"
