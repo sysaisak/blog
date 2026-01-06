@@ -10,3 +10,4 @@ draft = false
 -   [Bounty Hack]({{&lt; relref "bounty-hack.md" &gt;}})
 -   [IDE]({{&lt; relref "ide.md" &gt;}})
 -   [root-me]({{&lt; relref "root-me.md" &gt;}})
+-   [Agent Sudo]({{&lt; relref "agent-sudo.md" &gt;}})
