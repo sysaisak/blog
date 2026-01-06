@@ -11,17 +11,12 @@ draft = false
 
 <div class="heading">Table of Contents</div>
 
-- [Resumen](#resumen)
 - [Fase 1: Enumeración de Red](#fase-1-enumeración-de-red)
     - [Servicios detectados](#servicios-detectados)
-- [**21/tcp**: FTP](#21-tcp-ftp)
-- [**22/tcp**: SSH](#22-tcp-ssh)
-- [**80/tcp**: Apache HTTPD](#80-tcp-apache-httpd)
+- [Fase 2: Enumeración Web (User-Agent)](#fase-2-enumeración-web--user-agent)
 - [Fase 3: Ataque de Credenciales](#fase-3-ataque-de-credenciales)
     - [Fuerza bruta contra SSH](#fuerza-bruta-contra-ssh)
     - [Fuerza bruta contra FTP](#fuerza-bruta-contra-ftp)
-- [Usuario: `chris`](#usuario-chris)
-- [Contraseña: `crystal`](#contraseña-crystal)
 - [Fase 4: Enumeración FTP](#fase-4-enumeración-ftp)
 - [Fase 5: Análisis de Imágenes y Esteganografía](#fase-5-análisis-de-imágenes-y-esteganografía)
     - [Uso de strings](#uso-de-strings)
@@ -35,11 +30,6 @@ draft = false
 </div>
 <!--endtoc-->
 
-
-
-## Resumen {#resumen}
-
-Máquina **Agent Sudo** de TryHackMe. El acceso inicial se obtiene manipulando el **User-Agent**, seguido de fuerza bruta sobre FTP, análisis de esteganografía en imágenes y una escalada final mediante una vulnerabilidad conocida de **sudo** (CVE-2019-14287).
 
 
 ## Fase 1: Enumeración de Red {#fase-1-enumeración-de-red}
@@ -70,16 +60,12 @@ nmap -p21,22,80 -sCV 10.66.130.189
 
 ### Servicios detectados {#servicios-detectados}
 
-
- **21/tcp**: FTP {#21-tcp-ftp}
-
-
- **22/tcp**: SSH {#22-tcp-ssh}
+**21/tcp**: FTP
+**22/tcp**: SSH
+**80/tcp**: Apache HTTPD
 
 
- **80/tcp**: Apache HTTPD {#80-tcp-apache-httpd}
-
-###   Fase 2: Enumeración Web (User-Agent)
+## Fase 2: Enumeración Web (User-Agent) {#fase-2-enumeración-web--user-agent}
 
 Al acceder al sitio web se presenta el siguiente mensaje:
 
@@ -132,24 +118,21 @@ hydra -l chris -P /usr/share/wordlists/rockyou.txt ftp://10.66.130.189
 
 Se obtienen credenciales válidas:
 
+Usuario: `chris`
+Contraseña: `crystal`
 
-## Usuario: `chris` {#usuario-chris}
-
-
-## Contraseña: `crystal` {#contraseña-crystal}
-
-{{< figure src="ftp-enum.png" >}}
+{{< figure src="/images/ftp-enum.png" >}}
 
 
 ## Fase 4: Enumeración FTP {#fase-4-enumeración-ftp}
 
 Al autenticarse en el servicio FTP se descargan varios archivos, incluyendo imágenes y una carta.
 
-{{< figure src="content-letter-ftp.png" >}}
+{{< figure src="/images/content-letter-ftp.png" >}}
 
 El mensaje indica que la contraseña de otro agente está oculta dentro de las imágenes.
 
-{{< figure src="getting-all-files-ftp.png" >}}
+{{< figure src="/images/getting-all-files-ftp.png" >}}
 
 
 ## Fase 5: Análisis de Imágenes y Esteganografía {#fase-5-análisis-de-imágenes-y-esteganografía}
@@ -163,7 +146,7 @@ Se analizan las imágenes usando diversas herramientas.
 strings cutie.png
 ```
 
-{{< figure src="strings-img.png" >}}
+{{< figure src="/images/strings-img.png" >}}
 
 Se observa el archivo `To_agentR.txt` incrustado.
 
@@ -174,11 +157,11 @@ Se observa el archivo `To_agentR.txt` incrustado.
 binwalk -e cutie.png
 ```
 
-{{< figure src="binaries-in-img.png" >}}
+{{< figure src="/images/binaries-in-img.png" >}}
 
 La extracción genera varios archivos, destacando un ZIP cifrado.
 
-{{< figure src="content-of-cutieimg.png" >}}
+{{< figure src="/images/content-of-cutieimg.png" >}}
 
 ```bash
 file 8702.zip
@@ -196,9 +179,9 @@ zip2john 8702.zip > hash
 john hash --wordlist=/usr/share/wordlists/rockyou.txt
 ```
 
-{{< figure src="zip2john.png" >}}
+{{< figure src="/images/zip2john.png" >}}
 
-{{< figure src="john-in-action.png" >}}
+{{< figure src="/images/john-in-action.png" >}}
 
 La passphrase obtenida es:
 
@@ -209,7 +192,7 @@ La passphrase obtenida es:
 
 El ZIP contiene una carta con el texto codificado `QXJlYTUx`.
 
-{{< figure src="to-agent-r-zip.png" >}}
+{{< figure src="/images/to-agent-r-zip.png" >}}
 
 Se identifica como Base64:
 
@@ -223,14 +206,14 @@ Resultado:
 
 Esta contraseña se utiliza con **steghide** sobre la imagen restante, obteniendo credenciales para el usuario **james**.
 
-{{< figure src="agent-james.png" >}}
+{{< figure src="/images/agent-james.png" >}}
 
 
 ## Fase 8: Acceso como James {#fase-8-acceso-como-james}
 
 Se accede al sistema vía SSH y se enumeran los archivos del directorio home.
 
-{{< figure src="enum-james.png" >}}
+{{< figure src="/images/enum-james.png" >}}
 
 Se obtiene la primera flag `user.txt`.
 
@@ -239,11 +222,11 @@ Se obtiene la primera flag `user.txt`.
 
 Se descarga la imagen encontrada mediante **rsync**.
 
-{{< figure src="rsync-to-alien.png" >}}
+{{< figure src="/images/rsync-to-alien.png" >}}
 
 Mediante **Google Reverse Image Search** se identifica el incidente como el **Roswell Incident**.
 
-{{< figure src="google-image-search.png" >}}
+{{< figure src="/images/google-image-search.png" >}}
 
 
 ## Fase 10: Escalada de Privilegios {#fase-10-escalada-de-privilegios}
@@ -254,11 +237,11 @@ Antes de usar herramientas automáticas, se ejecuta:
 sudo -l
 ```
 
-{{< figure src="sudo-dash-l.png" >}}
+{{< figure src="/images/sudo-dash-l.png" >}}
 
 La configuración revela la vulnerabilidad **CVE-2019-14287**, que permite ejecutar comandos como root usando UID `-1`.
 
-{{< figure src="meme.jpg" >}}
+{{< figure src="/images/meme.jpg" >}}
 
 Se obtiene una shell privilegiada:
 
@@ -266,4 +249,4 @@ Se obtiene una shell privilegiada:
 sudo -u#-1 /bin/bash
 ```
 
-{{< figure src="ending.png" >}}
+{{< figure src="/images/ending.png" >}}
