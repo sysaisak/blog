@@ -14,10 +14,14 @@ draft = false
 - [Resumen](#resumen)
 - [Fase 1: Enumeración de Red](#fase-1-enumeración-de-red)
     - [Servicios detectados](#servicios-detectados)
-- [Fase 2: Enumeración Web (User-Agent)](#fase-2-enumeración-web--user-agent)
+- [**21/tcp**: FTP](#21-tcp-ftp)
+- [**22/tcp**: SSH](#22-tcp-ssh)
+- [**80/tcp**: Apache HTTPD](#80-tcp-apache-httpd)
 - [Fase 3: Ataque de Credenciales](#fase-3-ataque-de-credenciales)
     - [Fuerza bruta contra SSH](#fuerza-bruta-contra-ssh)
     - [Fuerza bruta contra FTP](#fuerza-bruta-contra-ftp)
+- [Usuario: `chris`](#usuario-chris)
+- [Contraseña: `crystal`](#contraseña-crystal)
 - [Fase 4: Enumeración FTP](#fase-4-enumeración-ftp)
 - [Fase 5: Análisis de Imágenes y Esteganografía](#fase-5-análisis-de-imágenes-y-esteganografía)
     - [Uso de strings](#uso-de-strings)
@@ -42,12 +46,13 @@ Máquina **Agent Sudo** de TryHackMe. El acceso inicial se obtiene manipulando e
 
 Se identifican los servicios expuestos mediante un escaneo completo de puertos y detección de servicios.
 
-Para ello se utilizó un **script propio en Python** que automatiza distintas fases de **nmap**.
-En este caso se usó la ****opción 1****, que realiza un escaneo completo de puertos abiertos y guarda el resultado en un archivo.
+Para ello se utilizó un **script propio en Python** que automatiza distintas fases de **nmap**. En este caso se usó la ****opción 1****, que realiza un escaneo completo de puertos abiertos y guarda el resultado en un archivo.
 
 ```bash
 python nmap_script.py 10.66.130.189
+
 # opción 1: escaneo completo de puertos
+
 ```
 
 El script ejecuta internamente el siguiente comando:
@@ -65,12 +70,16 @@ nmap -p21,22,80 -sCV 10.66.130.189
 
 ### Servicios detectados {#servicios-detectados}
 
--   **21/tcp**: FTP
--   **22/tcp**: SSH
--   **80/tcp**: Apache HTTPD
+
+ **21/tcp**: FTP {#21-tcp-ftp}
 
 
-## Fase 2: Enumeración Web (User-Agent) {#fase-2-enumeración-web--user-agent}
+ **22/tcp**: SSH {#22-tcp-ssh}
+
+
+ **80/tcp**: Apache HTTPD {#80-tcp-apache-httpd}
+
+###   Fase 2: Enumeración Web (User-Agent)
 
 Al acceder al sitio web se presenta el siguiente mensaje:
 
@@ -84,20 +93,18 @@ Al acceder al sitio web se presenta el siguiente mensaje:
 Se prueba modificar el **User-Agent** con curl:
 
 ```bash
-curl -A "user-agent" http://10.66.130.189
+curl -A "user-agent" [http://10.66.130.189](http://10.66.130.189)
 ```
 
-Inicialmente no se obtiene información relevante.
-La pista clave es seguir las redirecciones con la opción `-L`.
+Inicialmente no se obtiene información relevante. La pista clave es seguir las redirecciones con la opción `-L`.
 
 ```bash
-curl -A "C" -L http://10.66.130.189
+curl -A "C" -L [http://10.66.130.189](http://10.66.130.189)
 ```
 
 > Attention chris,
 >
-> Do you still remember our deal? Please tell agent J about the stuff ASAP.
-> Also, change your god damn password, is weak!
+> Do you still remember our deal? Please tell agent J about the stuff ASAP. Also, change your god damn password, is weak!
 >
 > From,
 > Agent R
@@ -125,8 +132,11 @@ hydra -l chris -P /usr/share/wordlists/rockyou.txt ftp://10.66.130.189
 
 Se obtienen credenciales válidas:
 
--   Usuario: `chris`
--   Contraseña: `crystal`
+
+## Usuario: `chris` {#usuario-chris}
+
+
+## Contraseña: `crystal` {#contraseña-crystal}
 
 {{< figure src="ftp-enum.png" >}}
 
@@ -143,6 +153,8 @@ El mensaje indica que la contraseña de otro agente está oculta dentro de las i
 
 
 ## Fase 5: Análisis de Imágenes y Esteganografía {#fase-5-análisis-de-imágenes-y-esteganografía}
+
+Se analizan las imágenes usando diversas herramientas.
 
 
 ### Uso de strings {#uso-de-strings}

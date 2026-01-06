@@ -9,6 +9,15 @@ theme = "hugo-simple"
   [params.author]
     name = "sysbl1nk"
 
+[[module.mounts]]
+source = 'static'
+target = 'static'
+
+[[module.mounts]]
+source = 'images'
+target = 'static/images'
+
+
 [caches]
   [caches.images]
     dir = ':cacheDir/images'
