@@ -66,19 +66,13 @@ curl -A "C" -L [http://10.66.130.189](http://10.66.130.189)
 Retorna:
 
 ```bash
-┌──(aisak㉿yuanjiao)-[~/pracs/thm/agent-sudo/content]
-└─$ curl -A "C" -L [http://10.66.130.189](http://10.66.130.189)
+curl -A "C" -L [http://10.66.130.189](http://10.66.130.189)
 
 Attention chris,
+ Do you still remember our deal? Please tell agent J about the stuff ASAP. Also, change your god damn password, is weak!
+
+ From, Agent R
 ```
-
-
-### Contenido de la página {#contenido-de-la-página}
-
-> Do you still remember our deal? Please tell agent J about the stuff ASAP. Also, change your god damn password, is weak!
->
-> From, Agent R
-
 
 ## Usuario Chris {#usuario-chris}
 
@@ -110,7 +104,7 @@ Por lo que ahora podremos loguearnos al servidor FTP con el usuario chris.
 
 En la carta, el agente C le dice al agente J que su contraseña está escondida en las imágenes que encontramos en el servidor FTP.
 
-{{< figure src="/blog/image/getting-all-files-ftp.png" >}}
+{{< figure src="/blog/images/getting-all-files-ftp.png" >}}
 
 
 ## Análisis de Imágenes con Exiftool {#análisis-de-imágenes-con-exiftool}
@@ -119,11 +113,11 @@ Traté de usar exiftool en las dos imágenes. En la primera, `cutie`, encontré 
 
 Intenté usar steghide, pero dijo que el tipo de archivo era incompatible. La otra imagen, `cute-alien.jpg`, sí era compatible pero nos faltaba la passphrase.
 
-{{< figure src="/blog/image/binaries-in-img.png" >}}
+{{< figure src="/blog/images/binaries-in-img.png" >}}
 
 Luego de buscar en Google qué hacer, encontré binwalk. Antes de usarlo probé la utilidad `strings`, pero solo encontré `To_agentR.txt` al final del output.
 
-{{< figure src="/blog/image/strings-img.png" >}}
+{{< figure src="/blog/images/strings-img.png" >}}
 
 La extracción de la imagen pudo hacerse:
 ![](/blog/image/content-of-cutieimg.png)
@@ -137,11 +131,11 @@ $ file 8702.zip
 
 Es un .zip encriptado, por lo que se necesita una passphrase para poder ver el contenido. Al pedirle una pista a TryHackMe nos sugiere "Mr. John"; entonces busco "¿Brute force passphrase with john the ripper?" y encuentro la utilidad `zip2john` para crear el hash.
 
-{{< figure src="/blog/image/zip2john.png" >}}
+{{< figure src="/blog/images/zip2john.png" >}}
 
 Sigo el paso a paso y uso el diccionario `rockyou.txt`.
 
-{{< figure src="/blog/image/john-in-action.png" >}}
+{{< figure src="/blog/images/john-in-action.png" >}}
 
 Nos dice que la passphrase para el archivo zip es `alien`.
 
@@ -150,11 +144,11 @@ Nos dice que la passphrase para el archivo zip es `alien`.
 
 El contenido del archivo zip es una carta al Agente R, dice lo siguiente:
 
-{{< figure src="/blog/image/to-agen-r-zip.png" >}}
+{{< figure src="/blog/images/to-agen-r-zip.png" >}}
 
 Parece que hay que romper otro código: `QXJlYTUx`. Lo que siempre intento es comprobar si es [[[<https://es.wikipedia.org/wiki/Base64>](<https://es.wikipedia.org/wiki/Base64>)][Base64]].
 
-{{< figure src="/blog/image/base65-decode.png" >}}
+{{< figure src="/blog/images/base65-decode.png" >}}
 
 Después de decodificar con base64, nos queda `area51`. Esta debe ser la contraseña para la otra imagen que se descargó del FTP.
 
@@ -170,7 +164,7 @@ Se encuentra en `/home/james/` lo siguiente:
 
 Encontramos la primera flag llamada `user.txt` y una imagen que parece ser la autopsia de un alien. Con `rsync` podemos traernos el archivo a la máquina atacante.
 
-{{< figure src="/blog/image/rsync-to-alien.png" >}}
+{{< figure src="/blog/images/rsync-to-alien.png" >}}
 
 La imagen encontrada es necesaria para una de las tareas de TryHackMe. Mientras escribo el writeup me he dado cuenta de que probablemente he pasado por alto algunas de las tareas.
 
@@ -179,7 +173,7 @@ La imagen en cuestión:
 
 La tarea es "¿Cómo se llama el incidente de la foto?". En uno de los hints nos dicen que se haga búsqueda inversa de la imagen y se use Fox News, algo que se puede hacer usando Google Search.
 
-{{< figure src="/blog/image/google-image-search.png" >}}
+{{< figure src="/blog/images/google-image-search.png" >}}
 
 Luego de adjuntar la imagen se encuentran las palabras clave **Roswell Incident**. Mi otra búsqueda es "Roswell Incident Fox News" y me encuentro con el titular: "Filmmaker reveals how he faked infamous 'Roswell alien autopsy' footage in a London apartment". La flag está ahí dentro.
 
@@ -188,14 +182,14 @@ Luego de adjuntar la imagen se encuentran las palabras clave **Roswell Incident*
 
 ¿Qué nos queda? Nos hace falta escalar privilegios en la máquina. Antes de empezar con linpeas, algo que hago es usar `sudo -l` y después buscar los binarios SUID.
 
-{{< figure src="/blog/image/sudo-dash-l.png" >}}
+{{< figure src="/blog/images/sudo-dash-l.png" >}}
 
 Esta es la parte donde las neuronas por alguna razón se activan; eso luce muy mal.
 
-{{< figure src="/blog/image/meme.jpg" >}}
+{{< figure src="/blog/images/meme.jpg" >}}
 
 El exploit afortunadamente para nosotros es conocido y documentado, puede encontrarse como **CVE-2019-14287**.
 
 `/etc/sudoers`, que es lo que se ve al hacer `sudo -l`, nos dice que podemos ejecutar `/bin/bash` como cualquier usuario menos root, por eso la negación `!root`. Se le pasa como UID el número -1; la versión vulnerable de sudo no hace las validaciones correctas y -1 se convierte en 0 (el UID del usuario root).
 
-{{< figure src="/blog/image/ending.png" >}}
+{{< figure src="/blog/images/ending.png" >}}
