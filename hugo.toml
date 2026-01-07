@@ -1,4 +1,4 @@
-baseURL = "https://sysbl1nk.github.io/blog/"
+baseURL = "https://sysbl1nk.github.io/"
 languageCode = "es"
 title = "Pwnd blog"
 theme = "hugo-simple"
