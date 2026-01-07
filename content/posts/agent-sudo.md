@@ -11,223 +11,191 @@ draft = false
 
 <div class="heading">Table of Contents</div>
 
-- [Fase 1: Enumeración de Red](#fase-1-enumeración-de-red)
-    - [Servicios detectados](#servicios-detectados)
-- [Fase 2: Enumeración Web (User-Agent)](#fase-2-enumeración-web--user-agent)
-- [Fase 3: Ataque de Credenciales](#fase-3-ataque-de-credenciales)
-    - [Fuerza bruta contra SSH](#fuerza-bruta-contra-ssh)
-    - [Fuerza bruta contra FTP](#fuerza-bruta-contra-ftp)
-- [Fase 4: Enumeración FTP](#fase-4-enumeración-ftp)
-- [Fase 5: Análisis de Imágenes y Esteganografía](#fase-5-análisis-de-imágenes-y-esteganografía)
-    - [Uso de strings](#uso-de-strings)
-    - [Uso de binwalk](#uso-de-binwalk)
-- [Fase 6: Fuerza Bruta del ZIP](#fase-6-fuerza-bruta-del-zip)
-- [Fase 7: Decodificación y Nuevas Credenciales](#fase-7-decodificación-y-nuevas-credenciales)
-- [Fase 8: Acceso como James](#fase-8-acceso-como-james)
-- [Fase 9: Investigación de la Imagen Alien](#fase-9-investigación-de-la-imagen-alien)
-- [Fase 10: Escalada de Privilegios](#fase-10-escalada-de-privilegios)
+- [Enumeración Web](#enumeración-web)
+- [De vuelta al User-Agent](#de-vuelta-al-user-agent)
+    - [Contenido de la página](#contenido-de-la-página)
+- [Usuario Chris](#usuario-chris)
+- [Enumeración FTP](#enumeración-ftp)
+- [Análisis de Imágenes con Exiftool](#análisis-de-imágenes-con-exiftool)
+- [Contenido del ZIP](#contenido-del-zip)
+- [Login como James y Enumeración](#login-como-james-y-enumeración)
+- [Escalada de Privilegios](#escalada-de-privilegios)
 
 </div>
 <!--endtoc-->
 
-
-
-## Fase 1: Enumeración de Red {#fase-1-enumeración-de-red}
-
-Se identifican los servicios expuestos mediante un escaneo completo de puertos y detección de servicios.
-
-Para ello se utilizó un **script propio en Python** que automatiza distintas fases de **nmap**. En este caso se usó la ****opción 1****, que realiza un escaneo completo de puertos abiertos y guarda el resultado en un archivo.
+La página web dice:
 
 ```bash
-python nmap_script.py 10.66.130.189
+Dear agents,
+
+Use your own codename as user-agent to access the site.
+
+From,
+Agent R
 ```
 
-El script ejecuta internamente el siguiente comando:
+Con curl podemos cambiar el user-agent:
 
 ```bash
-nmap -p- --open --min-rate 5000 -n -Pn 10.66.130.189 -oN openPorts
+curl -A "user-agent" website
 ```
 
-A partir de los puertos detectados, se procede con un escaneo de servicios.
+No encontré nada cambiando el user-agent con el comando curl, solo aparece un mensaje cuando el user-agent es el agente R.
+
+
+## Enumeración Web {#enumeración-web}
+
+Procedo con la enumeración de la web, en este caso subdirectorios y archivos ocultos. No se encontró nada enumerando los directorios ni los archivos con gobuster.
 
 ```bash
-nmap -p21,22,80 -sCV 10.66.130.189
+gobuster dir -u [http://10.66.130.189/](http://10.66.130.189/) -w /usr/share/wordlists/dirb/big.txt -x php,html,js,md -t 200 -o filesHidden
+
+gobuster dir -u [http://10.66.130.189/](http://10.66.130.189/) -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -t 200 -o subDirs
 ```
 
 
-### Servicios detectados {#servicios-detectados}
+## De vuelta al User-Agent {#de-vuelta-al-user-agent}
 
-**21/tcp**: FTP
-**22/tcp**: SSH
-**80/tcp**: Apache HTTPD
-
-
-## Fase 2: Enumeración Web (User-Agent) {#fase-2-enumeración-web--user-agent}
-
-Al acceder al sitio web se presenta el siguiente mensaje:
-
-> Dear agents,
->
-> Use your own codename as user-agent to access the site.
->
-> From,
-> Agent R
-
-Se prueba modificar el **User-Agent** con curl:
+La pista estaba en activar la lógica del servidor siguiendo el redirect con la flag \`-L\` de curl:
 
 ```bash
-curl -A "user-agent" http://10.66.130.189
+curl -A "C" -L [http://10.66.130.189](http://10.66.130.189)
 ```
 
-Inicialmente no se obtiene información relevante. La pista clave es seguir las redirecciones con la opción `-L`.
+Retorna:
 
 ```bash
-curl -A "C" -L http://10.66.130.189
+┌──(aisak㉿yuanjiao)-[~/pracs/thm/agent-sudo/content]
+└─$ curl -A "C" -L [http://10.66.130.189](http://10.66.130.189)
+
+Attention chris,
 ```
 
-> Attention chris,
->
+
+### Contenido de la página {#contenido-de-la-página}
+
 > Do you still remember our deal? Please tell agent J about the stuff ASAP. Also, change your god damn password, is weak!
 >
-> From,
-> Agent R
-
-Esto revela el usuario **chris** y sugiere el uso de una contraseña débil.
+> From, Agent R
 
 
-## Fase 3: Ataque de Credenciales {#fase-3-ataque-de-credenciales}
+## Usuario Chris {#usuario-chris}
 
-
-### Fuerza bruta contra SSH {#fuerza-bruta-contra-ssh}
+Ahora tenemos dos nuevos agentes, el agente Chris y el agente J. Como se sabe que el agente Chris tiene una contraseña débil, se procede a usar hydra para atacar el puerto 22/ssh:
 
 ```bash
 hydra -l chris -P /usr/share/wordlists/rockyou.txt ssh://10.66.130.189
 ```
 
-El ataque no resulta exitoso.
-
-
-### Fuerza bruta contra FTP {#fuerza-bruta-contra-ftp}
+El ataque a ssh no es exitoso, no se encuentran las credenciales. Pienso en atacar el puerto 21/ftp:
 
 ```bash
 hydra -l chris -P /usr/share/wordlists/rockyou.txt ftp://10.66.130.189
 ```
 
-Se obtienen credenciales válidas:
 
-Usuario: `chris`
-Contraseña: `crystal`
+## Enumeración FTP {#enumeración-ftp}
 
-{{< figure src="/images/ftp-enum.png" >}}
+Hydra encontró las siguientes credenciales:
 
+**Host**: 10.66.130.189
+**Login**: chris
+**Password**: crystal
 
-## Fase 4: Enumeración FTP {#fase-4-enumeración-ftp}
+Por lo que ahora podremos loguearnos al servidor FTP con el usuario chris.
 
-Al autenticarse en el servicio FTP se descargan varios archivos, incluyendo imágenes y una carta.
+![](/blog/image/ftp-enum.png)
+![](/blog/image/content-letter-ftp.png)
 
-{{< figure src="/images/content-letter-ftp.png" >}}
+En la carta, el agente C le dice al agente J que su contraseña está escondida en las imágenes que encontramos en el servidor FTP.
 
-El mensaje indica que la contraseña de otro agente está oculta dentro de las imágenes.
-
-{{< figure src="/images/getting-all-files-ftp.png" >}}
-
-
-## Fase 5: Análisis de Imágenes y Esteganografía {#fase-5-análisis-de-imágenes-y-esteganografía}
-
-Se analizan las imágenes usando diversas herramientas.
+{{< figure src="/blog/image/getting-all-files-ftp.png" >}}
 
 
-### Uso de strings {#uso-de-strings}
+## Análisis de Imágenes con Exiftool {#análisis-de-imágenes-con-exiftool}
 
-```bash
-strings cutie.png
-```
+Traté de usar exiftool en las dos imágenes. En la primera, `cutie`, encontré que al final del PNG hay archivos Binarios Tailored que interpreto como "atados".
 
-{{< figure src="/blog/images/strings-img.png" >}}
+Intenté usar steghide, pero dijo que el tipo de archivo era incompatible. La otra imagen, `cute-alien.jpg`, sí era compatible pero nos faltaba la passphrase.
 
-Se observa el archivo `To_agentR.txt` incrustado.
+{{< figure src="/blog/image/binaries-in-img.png" >}}
 
+Luego de buscar en Google qué hacer, encontré binwalk. Antes de usarlo probé la utilidad `strings`, pero solo encontré `To_agentR.txt` al final del output.
 
-### Uso de binwalk {#uso-de-binwalk}
+{{< figure src="/blog/image/strings-img.png" >}}
 
-```bash
-binwalk -e cutie.png
-```
+La extracción de la imagen pudo hacerse:
+![](/blog/image/content-of-cutieimg.png)
 
-{{< figure src="/blog/images/binaries-in-img.png" >}}
-
-La extracción genera varios archivos, destacando un ZIP cifrado.
-
-{{< figure src="/blog/images/content-of-cutieimg.png" >}}
+Se extrajeron 3 archivos, el más importante parece ser `8702.zip`.
 
 ```bash
-file 8702.zip
+$ file 8702.zip
+8702.zip: Zip archive data, made by v6.3 UNIX, extract using at least v5.1, last modified Oct 29 2019 20:29:12, uncompressed size 86, method=AES Encrypted
 ```
 
-> Zip archive data, AES encrypted
+Es un .zip encriptado, por lo que se necesita una passphrase para poder ver el contenido. Al pedirle una pista a TryHackMe nos sugiere "Mr. John"; entonces busco "¿Brute force passphrase with john the ripper?" y encuentro la utilidad `zip2john` para crear el hash.
+
+{{< figure src="/blog/image/zip2john.png" >}}
+
+Sigo el paso a paso y uso el diccionario `rockyou.txt`.
+
+{{< figure src="/blog/image/john-in-action.png" >}}
+
+Nos dice que la passphrase para el archivo zip es `alien`.
 
 
-## Fase 6: Fuerza Bruta del ZIP {#fase-6-fuerza-bruta-del-zip}
+## Contenido del ZIP {#contenido-del-zip}
 
-Con la pista proporcionada por TryHackMe (**Mr. John**), se utiliza **zip2john** y **john the ripper**.
+El contenido del archivo zip es una carta al Agente R, dice lo siguiente:
 
-```bash
-zip2john 8702.zip > hash
-john hash --wordlist=/usr/share/wordlists/rockyou.txt
-```
+{{< figure src="/blog/image/to-agen-r-zip.png" >}}
 
-{{< figure src="/blog/images/zip2john.png" >}}
+Parece que hay que romper otro código: `QXJlYTUx`. Lo que siempre intento es comprobar si es [[[<https://es.wikipedia.org/wiki/Base64>](<https://es.wikipedia.org/wiki/Base64>)][Base64]].
 
-{{< figure src="/blog/images/john-in-action.png" >}}
+{{< figure src="/blog/image/base65-decode.png" >}}
 
-La passphrase obtenida es:
+Después de decodificar con base64, nos queda `area51`. Esta debe ser la contraseña para la otra imagen que se descargó del FTP.
 
-> alien
+{{< figure src="/blog/image/agent-james.png" >}}
 
-
-## Fase 7: Decodificación y Nuevas Credenciales {#fase-7-decodificación-y-nuevas-credenciales}
-
-{{< figure src="/blog/images/to-agent-r-zip.png" >}}
-
-```bash
-echo QXJlYTUx | base64 -d
-```
-
-Resultado:
-
-> area51
-
-Esta contraseña se utiliza con **steghide** sobre la imagen restante, obteniendo credenciales para el usuario **james**.
-
-{{< figure src="/blog/images/agent-james.png" >}}
+Encontramos una contraseña para el agente James; supongo que ya es tiempo de acceder al servicio ssh como `james`.
 
 
-## Fase 8: Acceso como James {#fase-8-acceso-como-james}
+## Login como James y Enumeración {#login-como-james-y-enumeración}
 
-{{< figure src="/blog/images/enum-james.png" >}}
+Se encuentra en `/home/james/` lo siguiente:
+![](/blog/image/enum-james.png)
 
-Se obtiene la primera flag `user.txt`.
+Encontramos la primera flag llamada `user.txt` y una imagen que parece ser la autopsia de un alien. Con `rsync` podemos traernos el archivo a la máquina atacante.
+
+{{< figure src="/blog/image/rsync-to-alien.png" >}}
+
+La imagen encontrada es necesaria para una de las tareas de TryHackMe. Mientras escribo el writeup me he dado cuenta de que probablemente he pasado por alto algunas de las tareas.
+
+La imagen en cuestión:
+</blog/image/content>
+
+La tarea es "¿Cómo se llama el incidente de la foto?". En uno de los hints nos dicen que se haga búsqueda inversa de la imagen y se use Fox News, algo que se puede hacer usando Google Search.
+
+{{< figure src="/blog/image/google-image-search.png" >}}
+
+Luego de adjuntar la imagen se encuentran las palabras clave **Roswell Incident**. Mi otra búsqueda es "Roswell Incident Fox News" y me encuentro con el titular: "Filmmaker reveals how he faked infamous 'Roswell alien autopsy' footage in a London apartment". La flag está ahí dentro.
 
 
-## Fase 9: Investigación de la Imagen Alien {#fase-9-investigación-de-la-imagen-alien}
+## Escalada de Privilegios {#escalada-de-privilegios}
 
-{{< figure src="/blog/images/rsync-to-alien.png" >}}
+¿Qué nos queda? Nos hace falta escalar privilegios en la máquina. Antes de empezar con linpeas, algo que hago es usar `sudo -l` y después buscar los binarios SUID.
 
-{{< figure src="/blog/images/google-image-search.png" >}}
+{{< figure src="/blog/image/sudo-dash-l.png" >}}
 
+Esta es la parte donde las neuronas por alguna razón se activan; eso luce muy mal.
 
-## Fase 10: Escalada de Privilegios {#fase-10-escalada-de-privilegios}
+{{< figure src="/blog/image/meme.jpg" >}}
 
-```bash
-sudo -l
-```
+El exploit afortunadamente para nosotros es conocido y documentado, puede encontrarse como **CVE-2019-14287**.
 
-{{< figure src="/blog/images/sudo-dash-l.png" >}}
+`/etc/sudoers`, que es lo que se ve al hacer `sudo -l`, nos dice que podemos ejecutar `/bin/bash` como cualquier usuario menos root, por eso la negación `!root`. Se le pasa como UID el número -1; la versión vulnerable de sudo no hace las validaciones correctas y -1 se convierte en 0 (el UID del usuario root).
 
-{{< figure src="/blog/images/meme.jpg" >}}
-
-```bash
-sudo -u#-1 /bin/bash
-```
-
-{{< figure src="/blog/images/ending.png" >}}
+{{< figure src="/blog/image/ending.png" >}}
